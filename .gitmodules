@@ -1,6 +1,3 @@
-[submodule "vendor/basic-pitch"]
-	path = vendor/basic-pitch
-	url = https://github.com/spotify/basic-pitch
 [submodule "vendor/onnxruntime"]
 	path = vendor/onnxruntime
 	url = https://github.com/microsoft/onnxruntime
