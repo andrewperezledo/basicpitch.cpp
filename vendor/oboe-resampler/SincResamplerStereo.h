@@ -17,8 +17,10 @@
 #ifndef RESAMPLER_SINC_RESAMPLER_STEREO_H
 #define RESAMPLER_SINC_RESAMPLER_STEREO_H
 
+#ifndef _WIN32
 #include <sys/types.h>
 #include <unistd.h>
+#endif
 
 #include "SincResampler.h"
 #include "ResamplerDefinitions.h"

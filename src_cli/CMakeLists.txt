@@ -67,7 +67,6 @@ target_link_libraries(basicpitch ${ONNX_RUNTIME_LIB} libnyquist)
 file(GLOB SOURCES_TO_LINT 
     "${CMAKE_CURRENT_SOURCE_DIR}/../src/*.cpp" 
     "${CMAKE_CURRENT_SOURCE_DIR}/../src/*.hpp" 
-    "${CMAKE_CURRENT_SOURCE_DIR}/../src_wasm/*.cpp" 
     "${CMAKE_CURRENT_SOURCE_DIR}/../src_cli/*.cpp"
 )
 

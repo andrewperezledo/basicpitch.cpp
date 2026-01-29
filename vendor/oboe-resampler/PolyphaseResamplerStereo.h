@@ -17,8 +17,10 @@
 #ifndef RESAMPLER_POLYPHASE_RESAMPLER_STEREO_H
 #define RESAMPLER_POLYPHASE_RESAMPLER_STEREO_H
 
+#ifndef _WIN32
 #include <sys/types.h>
 #include <unistd.h>
+#endif
 
 #include "PolyphaseResampler.h"
 #include "ResamplerDefinitions.h"
