@@ -1,3 +1,7 @@
+# I Made all the POSIX includes conditional if not on windows
+# ********************************************************
+
+
 # Sample Rate Converter
 
 This folder contains a sample rate converter, or "resampler".

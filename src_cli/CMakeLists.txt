@@ -46,6 +46,7 @@ include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}/../src
     ${CMAKE_CURRENT_SOURCE_DIR}/../vendor/eigen
     ${CMAKE_CURRENT_SOURCE_DIR}/../vendor/oboe-resampler
+    ${CMAKE_CURRENT_SOURCE_DIR}/../vendor/libnyquist/include   # <--- ADDED THIS
 )
 
 # --- Source Discovery ---
@@ -54,6 +55,7 @@ file(GLOB SOURCES
     "${CMAKE_CURRENT_SOURCE_DIR}/../src_cli/*.cpp" 
     "${CMAKE_CURRENT_SOURCE_DIR}/../ort-model/model/model.ort.c" 
     "${CMAKE_CURRENT_SOURCE_DIR}/../vendor/oboe-resampler/*.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../vendor/libnyquist/include/libnyquist/*.cpp"
 )
 
 add_executable(basicpitch ${SOURCES})
@@ -61,6 +63,9 @@ add_executable(basicpitch ${SOURCES})
 # --- Target Specifics ---
 target_include_directories(basicpitch SYSTEM PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../vendor/libremidi/include)
 target_compile_definitions(basicpitch PRIVATE LIBREMIDI_HEADER_ONLY=1)
+if(MSVC)
+    target_compile_definitions(basicpitch PRIVATE _USE_MATH_DEFINES)
+endif()
 target_link_libraries(basicpitch ${ONNX_RUNTIME_LIB} libnyquist)
 
 # --- Cross-platform Linting ---
