@@ -1,5 +1,5 @@
 #include <Eigen/Dense>
-#include <onnxruntime/core/session/onnxruntime_cxx_api.h>
+#include <onnxruntime_cxx_api.h> // CHANGED THIS LINE TO FIT MY DIRECTORIES
 #include <unsupported/Eigen/CXX11/Tensor>
 
 // this is the nmp model baked into a header file

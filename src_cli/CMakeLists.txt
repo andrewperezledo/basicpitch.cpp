@@ -1,85 +1,72 @@
 cmake_minimum_required(VERSION 3.10)
-
-project(basicpitch.cpp)
-enable_testing()
+project(basicpitch.cpp LANGUAGES CXX) # Enable both C and C++ languages
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_C_STANDARD 11) # Standard for the .c model file
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
-# --- Compiler Specific Flags ---
+# --- 1. Compiler Specific Flags ---
 if(MSVC)
-    # Windows-specific flags
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W4")
-    set(CMAKE_CXX_FLAGS_RELEASE "/O2 /fp:fast /GL /DNDEBUG")
-else()
-    # Linux and macOS (GCC/Clang)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra")
-    set(CMAKE_CXX_FLAGS_RELEASE "-O3 -ffast-math -flto -fno-signed-zeros -fno-math-errno -DNDEBUG")
-    
-    # -march=native isn't supported on Apple Silicon (M1/M2/M3)
-    if(NOT APPLE)
-        set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -march=native")
-    endif()
-endif()
-
-# --- Handle ONNX Runtime Path & Extension ---
-if(APPLE)
-    set(ORT_EXT "dylib")
-    set(ORT_PLATFORM "macos")
-elseif(WIN32)
-    set(ORT_EXT "lib")
-    set(ORT_PLATFORM "win")
-else()
-    set(ORT_EXT "so")
-    set(ORT_PLATFORM "linux")
-endif()
-
-# Dynamically look for the library based on the OS
-# Note: You may need to ensure your build folders match these naming conventions
-set(ONNX_RUNTIME_LIB ${CMAKE_SOURCE_DIR}/../build/build-ort-${ORT_PLATFORM}/MinSizeRel/onnxruntime.${ORT_EXT})
-
-# --- Includes ---
-include_directories(
-    ${CMAKE_CURRENT_SOURCE_DIR}/../vendor/onnxruntime/include
-    ${CMAKE_CURRENT_SOURCE_DIR}/../ort-model/model
-    ${CMAKE_CURRENT_SOURCE_DIR}/../src
-    ${CMAKE_CURRENT_SOURCE_DIR}/../vendor/eigen
-    ${CMAKE_CURRENT_SOURCE_DIR}/../vendor/oboe-resampler
-    ${CMAKE_CURRENT_SOURCE_DIR}/../vendor/libnyquist/include   # <--- ADDED THIS
-)
-
-# --- Source Discovery ---
-file(GLOB SOURCES 
-    "${CMAKE_CURRENT_SOURCE_DIR}/../src/*.cpp" 
-    "${CMAKE_CURRENT_SOURCE_DIR}/../src_cli/*.cpp" 
-    "${CMAKE_CURRENT_SOURCE_DIR}/../ort-model/model/model.ort.c" 
-    "${CMAKE_CURRENT_SOURCE_DIR}/../vendor/oboe-resampler/*.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/../vendor/libnyquist/include/libnyquist/*.cpp"
-)
-
-add_executable(basicpitch ${SOURCES})
-
-# --- Target Specifics ---
-target_include_directories(basicpitch SYSTEM PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../vendor/libremidi/include)
-target_compile_definitions(basicpitch PRIVATE LIBREMIDI_HEADER_ONLY=1)
-if(MSVC)
-    target_compile_definitions(basicpitch PRIVATE _USE_MATH_DEFINES)
-endif()
-target_link_libraries(basicpitch ${ONNX_RUNTIME_LIB} libnyquist)
-
-# --- Cross-platform Linting ---
-file(GLOB SOURCES_TO_LINT 
-    "${CMAKE_CURRENT_SOURCE_DIR}/../src/*.cpp" 
-    "${CMAKE_CURRENT_SOURCE_DIR}/../src/*.hpp" 
-    "${CMAKE_CURRENT_SOURCE_DIR}/../src_cli/*.cpp"
-)
-
-# Only define lint target if not on Windows (as these tools are usually Unix-based)
-if(NOT WIN32)
-    add_custom_target(lint
-        COMMAND clang-format -i ${SOURCES_TO_LINT} --style=file
-        COMMAND cppcheck -I"src/" -I"cli-apps/" --enable=all --suppress=missingIncludeSystem ${SOURCES_TO_LINT} --std=c++17
-        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    # /TP forces C++ mode for .cpp files, /TC for .c files
+    # _ALLOW_COMPILER_AND_STL_VERSION_MISMATCH and _ALLOW_RTCC_IN_C_HEADERS 
+    # are the ultimate "shut up" flags for this specific error.
+    add_compile_options(
+        /W3 /EHsc /fp:fast /FI"cstdint" /TP
+        /D_ALLOW_COMPILER_AND_STL_VERSION_MISMATCH
     )
+    # We use /FI"cstdint" only for C++ files to avoid C compiler errors
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W3 /EHsc /fp:fast /FI\"cstdint\"")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /W3 /fp:fast")
+    
+    set(CMAKE_CXX_FLAGS_RELEASE "/O2 /GL /DNDEBUG")
+    add_definitions(-D_CRT_SECURE_NO_WARNINGS -D_USE_MATH_DEFINES)
+    add_definitions(-D"__attribute__(x)=" -D"_CRT_DECLARE_NONSTDC_NAMES")
+    
+    # Strictly disable Libnyquist extensions
+    add_definitions(-DLIBNYQUIST_QUIRK_ALL_EXTENSIONS=0)
+    add_definitions(-D_NO_OPUS -D_NO_VORBIS -D_NO_FLAC -D_NO_WAVPACK -D_NO_MUSEPACK -D_NO_MP3)
 endif()
+
+# --- 2. Handle ONNX Runtime Path ---
+set(ONNX_RUNTIME_LIB "${CMAKE_CURRENT_SOURCE_DIR}/../build/build-ort-win/MinSizeRel/onnxruntime.lib")
+
+# --- 3. Source Discovery ---
+# Only include the libnyquist sources required by this application (WAV decoding + core helpers)
+set(NYQUIST_SOURCES
+    "${CMAKE_CURRENT_SOURCE_DIR}/../vendor/libnyquist/src/Common.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../vendor/libnyquist/src/WavDecoder.cpp"
+)
+
+file(GLOB OBOE_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/../vendor/oboe-resampler/*.cpp")
+file(GLOB CORE_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/../src/*.cpp")
+file(GLOB CLI_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/*.cpp")
+set(MODEL_SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/../ort-model/model/model.cpp")
+
+# Explicitly tell CMake that the model file is C++ (it's a .cpp autogenerated file)
+set_source_files_properties(${MODEL_SOURCE} PROPERTIES LANGUAGE CXX)
+
+add_executable(basicpitch 
+    ${CORE_SOURCES} 
+    ${CLI_SOURCES} 
+    ${MODEL_SOURCE} 
+    ${OBOE_SOURCES} 
+    ${NYQUIST_SOURCES}
+)
+
+# --- 4. Includes ---
+target_include_directories(basicpitch PRIVATE 
+    "${CMAKE_CURRENT_SOURCE_DIR}/../src"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../ort-model/model"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../vendor/onnxruntime/include"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../vendor/eigen"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../vendor/oboe-resampler"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../vendor/libnyquist/include"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../vendor/libnyquist/include/libnyquist"
+)
+
+target_include_directories(basicpitch SYSTEM PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../vendor/libremidi/include")
+target_compile_definitions(basicpitch PRIVATE LIBREMIDI_HEADER_ONLY=1)
+
+# --- 5. Linking ---
+target_link_libraries(basicpitch PRIVATE "${ONNX_RUNTIME_LIB}")

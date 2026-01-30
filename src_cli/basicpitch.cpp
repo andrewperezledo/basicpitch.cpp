@@ -9,7 +9,6 @@
 #include <iostream>
 #include <libnyquist/Common.h>
 #include <libnyquist/Decoders.h>
-#include <libnyquist/Encoders.h>
 #include <map>
 #include <numeric>
 #include <ranges>
