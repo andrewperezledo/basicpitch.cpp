@@ -23,18 +23,6 @@ After the neural network inference, I use [libremidi](https://github.com/celtera
 
 I recommend the tool `midicsv` for inspecting MIDI events in CSV format without more complicated MIDI software, to compare the files output by basicpitch.cpp to the real basic-pitch.
 
-### Python
-
-To run Spotify's own inference code and the original Python inference code with ONNX, use the included inference script:
-```
-$ python scripts/python_inference.py --dest-dir ./midi-out-python/ ~/Downloads/clip.wav
-...
-Using model: /home/sevagh/repos/basicpitch.cpp/ort-model/model.onnx
-Writing MIDI outputs to ./midi-out-python/
-
-Predicting MIDI for /home/sevagh/Downloads/clip.wav...
-...
-```
 
 ### CLI app
 
@@ -57,47 +45,28 @@ MIDI data size: 889
 Wrote MIDI file to: "./midi-out-cpp/clip.mid"
 ```
 
-### WebAssembly/web demo
-
-For web testing, serve the web static contents with the Python HTTP server:
-```
-$ cd web && python -m http.server 8000
-```
-
-Use the website: 
-
-<img alt="web-screenshot" src=".github/web-screenshot.png" width="50%"/>
 
 ## Build instructions
 
-(Only tested on Linux, Pop!\_OS 22.04). I'm assuming you have a typical C/C++ toolchain e.g. make, cmake, gcc/g++, for your OS. You also need to set up the [Emscripten SDK](https://github.com/emscripten-core/emsdk) for compiling to WebAssembly.
-
+(Only tested on Windows 10). I'm assuming you have a typical C/C++ toolchain e.g. make, cmake, gcc/g++, for your OS.
 Clone the repo with submodules: 
 ```
-$ git clone --recurse-submodules https://github.com/sevagh/demucs.cpp
+$ git clone  https://github.com/andrewperezledo/basicpitch.cpp
 ```
 
-Create a Python venv (or conda env) and install the requirements:
-```
-$ pip install -r ./scripts/requirements.txt
-```
-
-Activate your venv and run the ONNXRuntime builder scripts:
-```
-$ activate my-env
-$ ./scripts/build-ort-linux.sh
-$ ./scripts/build-ort-wasm.sh
-```
-
-Check the outputs:
-```
-$ ls build/build-ort-*/MinSizeRel/libonnx.a
-build/build-ort-linux/MinSizeRel/libonnx.a  build/build-ort-wasm/MinSizeRel/libonnx.a
-```
 
 **Optional:** if you want to re-convert the ONNX model to ORT in the ort-model directory, use `scripts/convert-model-to-ort.sh ./ort-models/model.onnx`. The ONNX model is copied from `./vendor/basic-pitch/basic_pitch/saved_models/icassp_2022/nmp.onnx`
 
-Build cli app:
+(New) Build cli app:
+```
+$ cd src_cli
+$ mkdir build-cli
+$ cd build-cli
+$ cmake ../src_cli -G "Visual Studio 17 2022" -A x64
+$ cmake --build . --config Release
+```
+
+(OLD) Build cli app:
 ```
 $ make cli
 $ ls build/build-cli/basicpitch
