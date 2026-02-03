@@ -487,7 +487,7 @@ note_events_to_midi(const std::vector<basic_pitch::NoteEvent> &note_events,
     libremidi::midi_track instrument_track;
     instrument_track.emplace_back(0, 0,
                                   libremidi::channel_events::program_change(
-                                      0, 4)); // Set program to Electric Piano
+                                      0, 0)); // Set program to Acoustic Piano
 
     uint32_t last_tick = 0;
     for (const auto &event : midi_events)
